@@ -1,102 +1,85 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useCallback, useMemo } from 'react';
+import TaskList from './components/TaskList';
+import TaskForm from './components/TaskForm';
+import { Task } from '@/lib/types';
+import { getGeminiSuggestions, getInitialTasksAction } from '@/lib/actions';
+import { useAppDispatch, useAppSelector } from '@/redux/hooks';
+import { updateTask, setAllTasks } from '@/redux/features/tasks/tasksSlice';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const dispatch = useAppDispatch();
+  const tasks = useAppSelector((state) => state.tasks.tasks);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    const fetchAndSetInitialTasks = async () => {
+      try {
+        const initialTasks = await getInitialTasksAction();
+        dispatch(setAllTasks(initialTasks));
+      } catch (error) {
+        console.error("Failed to fetch initial tasks:", error);
+      }
+    };
+    fetchAndSetInitialTasks();
+  }, [dispatch]);
+
+  const handleSuggestSubtasks = useCallback(async (taskToUpdate: Task) => {
+    const prompt = `Break down the task "${taskToUpdate.title}: ${taskToUpdate.description || 'No description provided.'}" into 3-5 smaller, actionable subtasks. Provide them as a comma-separated list, e.g., "Subtask 1, Subtask 2, Subtask 3". Do not include any introductory or concluding sentences.`;
+
+    try {
+      const { suggestions, error } = await getGeminiSuggestions(prompt);
+      if (error) throw new Error(error);
+
+      const suggestedSubtasks = suggestions
+        ? suggestions.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : [];
+
+      dispatch(updateTask({ id: taskToUpdate.id, updatedFields: { subtasks: suggestedSubtasks } }));
+    } catch (error: any) {
+      console.error('Error from Gemini server action in Home component:', error);
+      throw error;
+    }
+  }, [dispatch]);
+
+  const sortedTasks = useMemo(() => {
+    return [...tasks].sort((a, b) => {
+      if (a.status === 'pending' && b.status === 'completed') return -1;
+      if (a.status === 'completed' && b.status === 'pending') return 1;
+      if (a.dueDate && b.dueDate) {
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      }
+      return 0;
+    });
+  }, [tasks]);
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 shadow-lg">
+        <div className="container mx-auto max-w-3xl">
+          <h1 className="text-4xl font-extrabold text-center">Smart Task Manager for AI Birthday</h1>
+          <p className="text-center text-blue-200 mt-2">Powered by Gemini AI for smart suggestions for AI Birthday</p>
         </div>
+      </header>
+
+      <main className="container mx-auto p-4 max-w-3xl py-8">
+        <TaskForm />
+        <h2 className="text-3xl font-bold mt-10 mb-6 text-gray-800 border-b-2 border-blue-300 pb-2">Your Tasks</h2>
+        {tasks.length === 0 ? (
+          <p className="text-center text-gray-600 p-8 bg-white rounded-lg shadow-md">
+            No tasks yet. Get started by adding your first task above!
+          </p>
+        ) : (
+          <TaskList
+            tasks={sortedTasks}
+            onSuggestSubtasks={handleSuggestSubtasks}
+          />
+        )}
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+
+      <footer className="bg-gray-800 text-white p-4 text-center mt-10">
+        <p>&copy; {new Date().getFullYear()} Smart Task Manager. All rights reserved.</p>
+        <p className="text-sm mt-1">Built with Next.js, TypeScript, Tailwind CSS, Redux Toolkit, and Google Gemini AI.</p>
       </footer>
     </div>
   );
