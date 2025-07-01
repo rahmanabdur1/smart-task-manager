@@ -7,7 +7,7 @@ This is a comprehensive task management application built with **Next.js 15+ (Ap
 * **Add, Edit, Delete Tasks:** Full CRUD operations for task management.
 * **Task Fields:** Each task includes a Title, Description, Status (Pending/Completed), and an optional Due Date.
 * **Mark as Complete:** Easily toggle the status of tasks.
-* **AI-Powered Subtask Suggestions:** A "Suggest Subtasks (AI)" button on each task leverages the Google Gemini AI to break down complex tasks into 3-5 smaller, actionable steps, enhancing productivity.
+* **AI-Powered Subtask Suggestions:** A "Suggest Subtasks (AI)" button on each task leverages the Google #Gemini AI to break down complex tasks into 3-5 smaller, actionable steps, enhancing productivity.
 * **Centralized State Management:** Utilizes **Redux Toolkit** for a predictable, scalable, and maintainable client-side state. No `localStorage` is used for task data directly; Redux manages the client's view, which is synced with successful server action calls.
 * **Server Actions:** All data mutations (adding, updating, deleting tasks, toggling status) and AI calls are performed using Next.js Server Actions, providing a streamlined and type-safe way to interact with server-side logic directly from client components.
 * **Form Validation:**
