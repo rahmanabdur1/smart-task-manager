@@ -42,3 +42,6 @@ Follow these steps to get the project running locally on your machine.
 ```bash
 git clone my repo :https://github.com/rahmanabdur1/smart-task-manager
 cd smart-task-manager
+pnpm install
+setup :GOOGLE_GEMINI_API_KEY=''
+pnpm dev
