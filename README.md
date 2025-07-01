@@ -40,5 +40,5 @@ Follow these steps to get the project running locally on your machine.
 ### 1. Clone the repository
 
 ```bash
-git clone my repo
+git clone my repo :https://github.com/rahmanabdur1/smart-task-manager
 cd smart-task-manager
